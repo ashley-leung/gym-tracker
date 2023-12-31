@@ -1,13 +1,15 @@
 import { collection, query, getDocs, where } from 'firebase/firestore';
 
 import { db } from './firebase';
-import { Exercise } from '../../app/Exercise';
-import { Set, Workout } from '../../app/workouts/[id]/page';
-import firestore, { Timestamp } from '@google-cloud/firestore';
+
+interface ExerciseDto {
+  id: string;
+  name: string;
+}
 
 export const getAuthenticatedUserExercise = async (
   uid: string
-): Promise<Exercise[]> => {
+): Promise<ExerciseDto[]> => {
   const exercisesCollectionRef = collection(db, 'users', uid, 'exercises');
 
   const q = query(exercisesCollectionRef);
@@ -15,8 +17,8 @@ export const getAuthenticatedUserExercise = async (
   const querySnapshot = await getDocs(q);
 
   const exercises = querySnapshot.docs.map((doc) => {
-    const res: Exercise = {
-      ...(doc.data() as Exercise),
+    const res: ExerciseDto = {
+      ...(doc.data() as ExerciseDto),
       id: doc.id,
     };
     return res;
@@ -24,11 +26,15 @@ export const getAuthenticatedUserExercise = async (
 
   return exercises;
 };
+interface WorkoutDto {
+  id: string;
+  date: string;
+}
 
 export const getAuthenticatedUserWorkouts = async (
   uid: string,
   exerciseId: string
-): Promise<Workout[]> => {
+): Promise<WorkoutDto[]> => {
   const workoutCollectionRef = collection(
     db,
     'users',
@@ -43,8 +49,8 @@ export const getAuthenticatedUserWorkouts = async (
   const querySnapshot = await getDocs(q);
 
   const workouts = querySnapshot.docs.map((doc) => {
-    const res: Workout = {
-      ...(doc.data() as Workout),
+    const res: WorkoutDto = {
+      ...(doc.data() as WorkoutDto),
       id: doc.id,
     };
     return res;
@@ -53,11 +59,18 @@ export const getAuthenticatedUserWorkouts = async (
   return workouts;
 };
 
+interface SetDto {
+  id: string;
+  number: Number;
+  reps: Number;
+  weight: Number;
+}
+
 export const getAuthenticatedUserSets = async (
   uid: string,
   exerciseId: string,
-  setId: string
-): Promise<Set[]> => {
+  workoutId: string
+): Promise<SetDto[]> => {
   const workoutCollectionRef = collection(
     db,
     'users',
@@ -65,15 +78,21 @@ export const getAuthenticatedUserSets = async (
     'exercises',
     exerciseId,
     'workout',
-    'sets',
-    setId
+    workoutId,
+    'sets'
   );
 
   const q = query(workoutCollectionRef);
 
   const querySnapshot = await getDocs(q);
 
-  const sets = querySnapshot.docs.map((doc) => doc.data() as Set);
+  const sets = querySnapshot.docs.map((doc) => {
+    const res: SetDto = {
+      ...(doc.data() as SetDto),
+      id: doc.id,
+    };
+    return res;
+  });
 
   return sets;
 };
