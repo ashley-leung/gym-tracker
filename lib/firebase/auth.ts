@@ -8,10 +8,6 @@ import {
 
 import { auth } from './firebase';
 
-export async function getAuthenticatedAppForUser() {
-  return { currentUser: auth.currentUser };
-}
-
 export function onAuthStateChanged(cb: NextOrObserver<User>) {
   return _onAuthStateChanged(auth, cb);
 }
