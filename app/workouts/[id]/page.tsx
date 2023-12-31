@@ -2,14 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import {
+  addAuthenticatedUserWorkouts,
   getAuthenticatedUserSets,
   getAuthenticatedUserWorkouts,
 } from '../../../lib/firebase/firestore';
 import { getUser } from '../../../lib/firebase/getUser';
+import moment from 'moment';
 
 export interface Workout {
   id: string;
-  date: string;
+  addedTimestamp: string;
   sets: Set[];
 }
 
@@ -27,6 +29,10 @@ export default function Workouts({ params }: { params: { id: string } }) {
   const fetchWorkouts = async (userUid: string) => {
     try {
       const res = await getAuthenticatedUserWorkouts(userUid, params.id);
+      res.sort(
+        (a, b) =>
+          parseInt(b.addedTimestamp, 10) - parseInt(a.addedTimestamp, 10)
+      );
 
       // Fetch sets for each workout
       const workoutsWithSets = await Promise.all(
@@ -39,11 +45,17 @@ export default function Workouts({ params }: { params: { id: string } }) {
           return { ...workout, sets };
         })
       );
-
       setWorkouts(workoutsWithSets);
     } catch (error) {
       // Handle error if necessary
       console.error('Error fetching data:', error);
+    }
+  };
+
+  const handleAddWorkout = async () => {
+    if (user) {
+      await addAuthenticatedUserWorkouts(user.uid, params.id);
+      fetchWorkouts(user.uid);
     }
   };
 
@@ -58,11 +70,10 @@ export default function Workouts({ params }: { params: { id: string } }) {
       {params.id}
       <ul>
         {workouts.map((workout) => {
-          const epochMilliseconds = parseInt(workout.date, 10);
+          const addedTimestamp = parseInt(workout.addedTimestamp, 10);
           return (
             <li key={workout.id}>
-              {new Date(epochMilliseconds * 1000).toLocaleDateString()}{' '}
-              {new Date(epochMilliseconds * 1000).toLocaleTimeString()}{' '}
+              {moment(addedTimestamp).format('Do MMM, YYYY HH:mm:ss')}{' '}
               {workout.sets.map((set) => (
                 <>
                   <p key={set.id}>
@@ -75,6 +86,7 @@ export default function Workouts({ params }: { params: { id: string } }) {
           );
         })}
       </ul>
+      <button onClick={handleAddWorkout}>Add workout</button>
     </>
   );
 }

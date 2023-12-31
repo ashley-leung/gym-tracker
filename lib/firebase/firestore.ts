@@ -1,11 +1,40 @@
-import { collection, query, getDocs, where } from 'firebase/firestore';
+import { collection, query, getDocs, addDoc } from 'firebase/firestore';
 
 import { db } from './firebase';
+import moment from 'moment';
 
 interface ExerciseDto {
   id: string;
   name: string;
+  addedTimestamp: string;
 }
+
+export const addAuthenticatedUserExercise = async (uid: string) => {
+  const exercisesCollectionRef = collection(db, 'users', uid, 'exercises');
+  const baseExerciseName = 'New exercise';
+
+  // Get existing exercise names
+  const existingExercises = await getDocs(exercisesCollectionRef);
+  const existingNames = existingExercises.docs.map(
+    (doc) => (doc.data() as { name: string }).name
+  );
+
+  let newExerciseName = baseExerciseName;
+  let counter = 1;
+
+  // Check for duplicates and increment counter
+  while (existingNames.includes(newExerciseName)) {
+    counter++;
+    newExerciseName = `${baseExerciseName} ${counter}`;
+  }
+
+  const exerciseRef = await addDoc(exercisesCollectionRef, {
+    name: newExerciseName,
+    addedTimestamp: moment().valueOf(),
+  });
+
+  return exerciseRef.id;
+};
 
 export const getAuthenticatedUserExercise = async (
   uid: string
@@ -28,8 +57,26 @@ export const getAuthenticatedUserExercise = async (
 };
 interface WorkoutDto {
   id: string;
-  date: string;
+  addedTimestamp: string;
 }
+
+export const addAuthenticatedUserWorkouts = async (
+  uid: string,
+  exerciseId: string
+) => {
+  const workoutCollectionRef = collection(
+    db,
+    'users',
+    uid,
+    'exercises',
+    exerciseId,
+    'workout'
+  );
+
+  await addDoc(workoutCollectionRef, {
+    addedTimestamp: moment().valueOf(),
+  });
+};
 
 export const getAuthenticatedUserWorkouts = async (
   uid: string,

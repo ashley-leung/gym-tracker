@@ -1,6 +1,9 @@
 'use client';
 
-import { getAuthenticatedUserExercise } from '../lib/firebase/firestore';
+import {
+  addAuthenticatedUserExercise,
+  getAuthenticatedUserExercise,
+} from '../lib/firebase/firestore';
 import { getUser } from '../lib/firebase/getUser';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -8,6 +11,7 @@ import { useEffect, useState } from 'react';
 export interface Exercise {
   id: string;
   name: string;
+  addedTimestamp: string;
 }
 
 export default function Exercise() {
@@ -17,10 +21,21 @@ export default function Exercise() {
   const fetchData = async (userUid: string) => {
     try {
       const res = await getAuthenticatedUserExercise(userUid);
+      res.sort(
+        (a, b) =>
+          parseInt(b.addedTimestamp, 10) - parseInt(a.addedTimestamp, 10)
+      );
       setExercises(res);
     } catch (error) {
       // Handle error if necessary
       console.error('Error fetching data:', error);
+    }
+  };
+
+  const handleAddExercise = async () => {
+    if (user) {
+      const exerciseId = await addAuthenticatedUserExercise(user.uid);
+      fetchData(user.uid);
     }
   };
 
@@ -39,11 +54,14 @@ export default function Exercise() {
               {exercise.id}
               <>, </>
               {exercise.name}
+              <>, </>
+              {exercise.addedTimestamp}
             </Link>
             <br />
           </>
         ))}
       </ul>
+      <button onClick={handleAddExercise}>Add exercise</button>
     </>
   );
 }
